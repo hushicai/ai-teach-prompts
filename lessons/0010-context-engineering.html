@@ -210,6 +210,9 @@ python -m pytest --summary 2>/dev/null || echo "测试框架尚未配置"</pre>
   </div>
 </div>
 
+<h2>跨模型适用性</h2>
+<p>上下文工程是<strong>跨模型通用</strong>的方法论。所有主流模型（Claude、GPT-4o、Gemini、DeepSeek）都支持文件读取、状态管理和多会话工作流。唯一差异在于国产模型的上下文窗口较小，建议精简状态文件。</p>
+
 <h2>总结</h2>
 <ol>
   <li><strong>Context Engineering</strong> 是提示词工程的进化——管理整个生命周期的信息流</li>
@@ -223,7 +226,7 @@ python -m pytest --summary 2>/dev/null || echo "测试框架尚未配置"</pre>
 <p><strong>推荐延伸阅读</strong>：<a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank">Anthropic — Effective Context Engineering</a></p>
 <p><strong>课后问题</strong>：对本课内容有任何疑问，随时可以问我。</p>
 
-<footer>Lesson 10 of Anthropic 提示词工程</footer>
+<footer>Lesson 10 of Anthropic 提示词工程 &middot; 上节课：<a href="0009-tool-use-agent.html">Lesson 9: 工具调用与 Agent 系统</a></footer>
 </div>
 
 <script>
