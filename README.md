@@ -21,6 +21,7 @@
 | 9 | 工具调用与 Agent 系统 |
 | 10 | Context Engineering — 上下文工程与状态管理 |
 | 11 | Effort 参数与自适应思考 |
+| 12 | 子代理编排 — 多 Agent 协作 |
 
 （持续更新中）
 
