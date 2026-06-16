@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 8: 幻觉预防与可靠性提升</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root { --text: #1a1a2e; --bg: #faf9f7; --accent: #b71c1c; --accent-light: #fbe9e7; --border: #ddd8d0; --code-bg: #f4f3ef; --green: #2d6a4f; --green-bg: #e8f5e9; --width: 680px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Serif SC', Georgia, serif; color: var(--text); background: var(--bg); line-height: 1.8; font-size: 16px; padding: 2rem 1rem; }
+  .container { max-width: var(--width); margin: 0 auto; }
+  .sidenote { float: right; clear: right; margin-right: -260px; width: 230px; font-size: 0.78rem; line-height: 1.5; color: #555; font-family: 'Noto Sans SC', sans-serif; margin-top: 0.3rem; padding: 0.5rem 0.8rem; background: #f4f3ef; border-radius: 4px; }
+  @media (max-width: 1000px) { .sidenote { float: none; margin-right: 0; width: 100%; } }
+  h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--accent); }
+  .subtitle { font-family: 'Noto Sans SC', sans-serif; font-size: 0.95rem; color: #777; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  h2 { font-size: 1.4rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.8rem; margin-bottom: 0.5rem; }
+  p { margin-bottom: 1rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.3rem; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 1rem 1.2rem; border-radius: 6px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; margin: 1rem 0; white-space: pre-wrap; }
+  .prompt-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  @media (max-width: 600px) { .prompt-pair { grid-template-columns: 1fr; } }
+  .prompt-box { border-radius: 6px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; }
+  .prompt-bad { background: var(--red-bg); border-left: 3px solid var(--red); }
+  .prompt-good { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .label-bad { font-family: 'Noto Sans SC', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--red); margin-bottom: 0.3rem; }
+  .label-good { font-family: 'Noto Sans SC', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--green); margin-bottom: 0.3rem; }
+  .quiz { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .quiz-question { font-weight: 600; margin-bottom: 0.8rem; }
+  .quiz-option { display: block; margin: 0.4rem 0; padding: 0.5rem 0.8rem; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .quiz-option:hover { background: #f8f7f5; }
+  .quiz-option input { margin-right: 0.5rem; }
+  .quiz-option.correct { background: var(--green-bg); border-color: var(--green); }
+  .quiz-option.wrong { background: var(--red-bg); border-color: var(--red); }
+  .quiz-feedback { margin-top: 0.8rem; padding: 0.8rem; border-radius: 4px; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--green-bg); color: var(--green); }
+  .quiz-feedback.wrong { background: var(--red-bg); color: var(--red); }
+  .btn { font-family: 'Noto Sans SC', sans-serif; background: #1a1a2e; color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.88rem; margin-top: 0.5rem; }
+  .btn:hover { opacity: 0.85; }
+  .exercise { background: var(--accent-light); border: 1px solid var(--accent); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; }
+  .exercise-title { font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .exercise textarea { width: 100%; min-height: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 4px; margin: 0.5rem 0; resize: vertical; background: white; }
+  .exercise .hint { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; color: #555; }
+  .callout { background: #fff8e1; border-left: 3px solid #f9a825; padding: 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; }
+  .callout strong { color: #e65100; }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-family: 'Noto Sans SC', sans-serif; font-size: 0.85rem; color: #777; }
+  .reference-link { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; }
+  .reference-link a { color: var(--blue); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  th, td { border: 1px solid var(--border); padding: 0.6rem 0.8rem; text-align: left; }
+  th { background: var(--code-bg); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>幻觉预防与可靠性提升</h1>
+<p class="subtitle">Lesson 8 &middot; 让 AI 的回答更可信 &middot; 约 25 分钟</p>
+
+<p>
+所有大模型都会产生幻觉（hallucination）——编造事实、虚构引用、自信地给出错误答案。
+好消息是：<strong>大部分幻觉不是模型"笨"，而是你的 prompt 给了它幻觉的空间</strong>。
+</p>
+
+<p>
+本课整合前面几课中的防幻觉技巧（引用先行、自检、CoT），并补充新的策略，
+形成一套完整的可靠性提升体系。
+</p>
+
+<p class="reference-link">
+► 官方参考：<a href="https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/08_Avoiding_Hallucinations.ipynb" target="_blank">Anthropic 官方教程 — Ch8: Avoiding Hallucinations</a>
+</p>
+
+<div class="sidenote">
+Anthropic 在新模型上大幅减少了幻觉，但不可能完全消除。关键是：不要期望模型"不说谎"，而是通过 prompt 设计让它<em>难以</em>说谎。
+</div>
+
+<h2>幻觉的三种类型</h2>
+
+<table>
+  <tr><th>类型</th><th>示例</th><th>主要原因</th></tr>
+  <tr><td>事实错误</td><td>"2024 年奥运会北京举办"</td><td>模型知识边界外，或训练数据偏差</td></tr>
+  <tr><td>虚构引用</td><td>编造论文标题和作者</td><td>模型"填空"本能——它觉得这里应该有引用</td></tr>
+  <tr><td>逻辑跳跃</td><td>"因为销售额增长所以利润一定增长"</td><td>跳过推理步骤，直接下结论</td></tr>
+</table>
+
+<h2>技巧一：给 AI 说"不知道"的权利</h2>
+
+<p>很多幻觉源自模型觉得"必须给个答案"。如果你明确允许它说不知道，幻觉率大幅下降：</p>
+
+<div class="prompt-pair">
+  <div>
+    <div class="label-bad">✗ 隐含"必须答"</div>
+    <div class="prompt-box prompt-bad">2024 年 WWDC 上 Apple 发布了哪些新 AI 功能？</div>
+  </div>
+  <div>
+    <div class="label-good">✓ 允许不知道</div>
+    <div class="prompt-box prompt-good">2024 年 WWDC 上 Apple 发布了哪些新 AI 功能？
+如果你不确定或记忆模糊，请明确说"我不确定"而不是猜测。</div>
+  </div>
+</div>
+
+<p>在 system prompt 中也可以加上：</p>
+
+<pre>如果你不确定答案，说"我不确定"而不是虚构。
+这对于日期、统计数据、引用来源等问题尤其重要。</pre>
+
+<h2>技巧二：引用先行（防幻觉第一利器）</h2>
+
+<p>从 L5 回顾并强化：当处理长文档时，强制 AI 先引用原文再分析。</p>
+
+<pre>&lt;task&gt;分析这份合同中的潜在风险条款。&lt;/task&gt;
+
+&lt;contract&gt;（合同全文）&lt;/contract&gt;
+
+在分析之前，先从合同中找出与风险相关的原文引用，
+放在 &lt;quotes&gt; 标签中。然后基于这些引用分析风险。
+
+如果合同中没有明确提及某个风险，不要说"可能存在风险"。
+只有在有原文依据时才做分析。</pre>
+
+<div class="callout">
+<strong>关键机制</strong>：引用先行打断了模型"先猜测后找证据"的路径，强制它"先找证据再下结论"。这是单次 prompt 中最有效的防幻觉手段。
+</div>
+
+<h2>技巧三：内部自检</h2>
+
+<p>在 prompt 末尾追加自检指令——让 AI 在给出最终答案前验证自己的输出：</p>
+
+<pre>在结束之前，请检查你的回答：
+1. 所有引用的数据是否都来源于上面给出的文档？
+2. 结论是否有明确的推理步骤支撑？
+3. 是否有任何陈述是你"觉得"但无法从材料中证实的？
+
+如果发现不准确之处，在 &lt;corrections&gt; 中修正。</pre>
+
+<p>自检在编码任务中尤其有效：</p>
+
+<pre>写一个 Python 函数，检测字符串是否回文。
+
+完成代码后，在 &lt;verification&gt; 中列出你对代码的检查结果：
+- 边界条件是否处理了（空字符串、单字符、大小写）？
+- 是否有性能问题？
+- 是否有 Python 版本兼容性问题？</pre>
+
+<h2>技巧四：降低 prompt 本身的模糊性</h2>
+
+<p>模糊的 prompt 是幻觉的温床——模型不知道你要什么，于是"猜"一个答案。</p>
+
+<table>
+  <tr><th>模糊写法</th><th>明确写法</th></tr>
+  <tr><td>分析这份数据</td><td>分析这份数据，回答三个问题：1. 增长率是多少？2. 主要增长来源是什么？3. 有什么异常点？</td></tr>
+  <tr><td>帮我写个方案</td><td>帮我写一个 3 个月的敏捷转型方案，包含阶段划分、里程碑和风险评估</td></tr>
+  <tr><td>这代码有什么问题</td><td>审查这段代码：检查潜在 bug、安全隐患和性能瓶颈，对每个问题标注严重程度</td></tr>
+</table>
+
+<div class="quiz">
+  <div class="quiz-question">✏️ 测验 1：哪个 prompt 最能有效减少幻觉？</div>
+  <label class="quiz-option"><input type="radio" name="q1" value="a"> 解释量子计算的原理</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="b"> 解释量子计算的原理。如果你不确定任何细节，请明确说"我不确定"。引用你确认的来源。</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="c"> 什么是量子计算？</label>
+  <div class="quiz-feedback" id="q1-feedback"></div>
+  <button class="btn" onclick="checkQuiz('q1', 'b')">检查答案</button>
+</div>
+
+<h2>技巧五：链式验证</h2>
+
+<p>结合 L7 的链式技巧，用多步验证来排除幻觉：</p>
+
+<div class="flow" style="display:flex;align-items:center;justify-content:center;gap:0.5rem;margin:1.5rem 0;font-family:'Noto Sans SC',sans-serif;flex-wrap:wrap;">
+  <span style="background:var(--accent);color:white;padding:0.6rem 1rem;border-radius:6px;font-size:0.85rem;text-align:center;">生成答案</span>
+  <span style="color:var(--text);font-size:1.2rem;">→</span>
+  <span style="background:#e65100;color:white;padding:0.6rem 1rem;border-radius:6px;font-size:0.85rem;text-align:center;">事实核查</span>
+  <span style="color:var(--text);font-size:1.2rem;">→</span>
+  <span style="background:var(--accent);color:white;padding:0.6rem 1rem;border-radius:6px;font-size:0.85rem;text-align:center;">修正输出</span>
+</div>
+
+<p>Step 1 — 生成：正常执行任务，但标注不确定的点。</p>
+<pre>生成方案。对任何你不确定的数据或假设，用 \[不确定\] 标注。</pre>
+
+<p>Step 2 — 事实核查：专门检查上一步中的不确定点。</p>
+<pre>以下方案中有多处 \[不确定\] 标注。请逐一核查：
+1. 哪些有可靠来源支持？
+2. 哪些需要进一步调研？
+3. 哪些是明显错误需要删除？
+
+&lt;draft&gt;（Step 1 输出）&lt;/draft&gt;</pre>
+
+<p>Step 3 — 修正：基于核查结果输出最终版本。</p>
+
+<h2>技巧六：temperature 与 effort 控制</h2>
+
+<p>在 API 层面，幻觉与<strong>创造性</strong>正相关：</p>
+
+<table>
+  <tr><th>参数</th><th>低值</th><th>高值</th></tr>
+  <tr><td>temperature</td><td>0（几乎无随机性，适合事实型任务）</td><td>0.7+（适合创意写作，但幻觉更多）</td></tr>
+  <tr><td>Claude effort</td><td>low（快速回答，较少"多想"出来的幻觉）</td><td>max（深入思考，但可能产生"想太多"的幻觉）</td></tr>
+</table>
+
+<p><strong>经验法则</strong>：事实提取、分类、结构化输出 → temperature = 0。创意写作、头脑风暴 → temperature 0.5–0.7。</p>
+
+<div class="exercise">
+  <div class="exercise-title">✍️ 练习：为法律合同审查设计防幻觉 prompt</div>
+  <p>你需要 AI 审查一份合同，找出潜在风险。合同有 5000 字。请设计一条 prompt，要求 AI 引用原文、标注不确定点、自检，且不得虚构条款。</p>
+  <textarea id="exercise1" placeholder="设计包含引用先行+不确定标注+自检的 prompt..."></textarea>
+  <div class="hint">提示：结合引用先行（L5）、允许说不知道（本课）、自检（L3）。</div>
+  <button class="btn" onclick="toggleHint('ex1-hint')">查看参考答案</button>
+  <div id="ex1-hint" style="display:none; margin-top:0.8rem;">
+    <pre>&lt;task&gt;审查以下合同，找出潜在风险条款。&lt;/task&gt;
+
+&lt;contract&gt;（合同全文）&lt;/contract&gt;
+
+&lt;rules&gt;
+1. 对每个风险点，必须先引用原文再分析
+2. 如果对某条款的解读不确定，标注 \[需确认\] 而不是猜测
+3. 不得虚构不存在的条款或常见的"标准条款"
+4. 完成分析后，在 &lt;self_check&gt; 中检查是否所有结论都有原文依据
+&lt;/rules&gt;</pre>
+  </div>
+</div>
+
+<h2>跨模型适用性</h2>
+
+<table>
+  <tr><th>技巧</th><th>所有模型</th><th>说明</th></tr>
+  <tr><td>允许说"不知道"</td><td>★★★</td><td>所有模型都倾向于"给答案"，明确允许不知道能减少幻觉</td></tr>
+  <tr><td>引用先行</td><td>★★★</td><td>强制模型基于证据而非记忆回答</td></tr>
+  <tr><td>内部自检</td><td>★★★</td><td>给模型一次"纠正自己"的机会</td></tr>
+  <tr><td>降低 prompt 模糊性</td><td>★★★</td><td>模糊输入→模糊输出，是所有模型的通病</td></tr>
+  <tr><td>temperature=0</td><td>★★★</td><td>所有 API 都支持，对事实型任务至关重要</td></tr>
+</table>
+
+<div class="callout">
+<strong>跨模型结论</strong>：防幻觉技术<strong>几乎全部通用</strong>。唯一模型相关的是内部 thinking 机制——Claude 的 adaptive thinking 可以在不占用输出 token 的情况下做自检，而其他模型需要通过 prompt 显式要求。
+</div>
+
+<h2>总结</h2>
+<ol>
+  <li><strong>允许说"不知道"</strong> — 最简单的防幻觉手段，只需一句话</li>
+  <li><strong>引用先行</strong> — 先找证据再下结论，单次 prompt 最有效</li>
+  <li><strong>内部自检</strong> — 让 AI 在交付前检查自己的输出</li>
+  <li><strong>降低模糊性</strong> — 模糊 prompt = 幻觉的温床</li>
+  <li><strong>链式验证</strong> — 生成 → 事实核查 → 修正</li>
+  <li><strong>temperature=0</strong> — 事实型任务永远设为 0</li>
+</ol>
+
+<p class="callout"><strong>课后行动</strong>：在日常工作中找一个你经常遇到幻觉的场景，应用"引用先行+允许不知道+自检"组合拳，对比前后效果。</p>
+
+<p><strong>推荐延伸阅读</strong>：<a href="https://github.com/anthropics/prompt-eng-interactive-tutorial/blob/master/Anthropic%201P/08_Avoiding_Hallucinations.ipynb" target="_blank">Anthropic — Avoiding Hallucinations (Chapter 8)</a></p>
+<p><strong>课后问题</strong>：对本课内容有任何疑问，随时可以问我。</p>
+
+<footer>Lesson 8 of Anthropic 提示词工程 &middot; 上节课：<a href="0007-prompt-chaining.html">Lesson 7: Prompt Chaining</a></footer>
+</div>
+
+<script>
+function checkQuiz(quizId, correctAnswer) {
+  const quizEl = document.getElementById(quizId + '-feedback');
+  const selected = document.querySelector(`input[name="${quizId}"]:checked`);
+  if (!selected) { quizEl.textContent = '请先选择一个选项。'; quizEl.className = 'quiz-feedback show wrong'; return; }
+  document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => el.parentElement.classList.remove('correct', 'wrong'));
+  const label = selected.parentElement;
+  if (selected.value === correctAnswer) {
+    label.classList.add('correct');
+    quizEl.textContent = '✓ 正确！' + getExplanation(quizId); quizEl.className = 'quiz-feedback show correct';
+  } else {
+    label.classList.add('wrong');
+    document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => { if (el.value === correctAnswer) el.parentElement.classList.add('correct'); });
+    quizEl.textContent = '✗ 再想想。' + getExplanation(quizId); quizEl.className = 'quiz-feedback show wrong';
+  }
+}
+function getExplanation(quizId) {
+  return { 'q1': '选项 B 明确允许 AI 说"我不确定"，并要求引用确认的来源。幻觉最容易发生在 AI"被迫"给出答案时——给一个"安全出口"就能大幅减少。' }[quizId] || '';
+}
+function toggleHint(id) { const el = document.getElementById(id); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+</script>
+</body>
+</html>
