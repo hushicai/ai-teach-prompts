@@ -109,14 +109,26 @@ Anthropic 发现：新模型过度思考是常见问题。如果你之前用 ant
 
 <p>如果你之前用过 <code>budget_tokens</code>：</p>
 
-<pre>// 旧方式（extended thinking）
+<pre>// 旧方式（extended thinking，已废弃）
 thinking: { "type": "enabled", "budget_tokens": 32000 }
 
-// 新方式（adaptive thinking）
+// 新方式（adaptive thinking，推荐）
 thinking: { "type": "adaptive" }
-output_config: { "effort": "high" }</pre>
+effort: "high"</pre>
 
 <p><strong>不再需要手动设 budget_tokens</strong>——adaptive thinking 自动管理推理深度，由 effort 参数控制。</p>
+
+<div class="callout">
+<strong>模型差异</strong>：在 Fable 5 和 Mythos 5 上，adaptive thinking <strong>始终开启、不可关闭</strong>（<code>type: "disabled"</code> 会报错）。Opus 4.8 和 Opus 4.7 也不再支持 manual thinking。这些模型都通过 <code>effort</code> 参数控制推理深度。
+</div>
+
+<p><strong>控制 thinking 可见性</strong>：通过 <code>display</code> 字段控制要不要看到 thinking 内容：</p>
+
+<pre>// 看到总结版 thinking（Claude 4 默认）
+thinking: { "type": "adaptive", "display": "summarized" }
+
+// 跳过 thinking 内容（延迟更低，适合生产管道）
+thinking: { "type": "adaptive", "display": "omitted" }</pre>
 
 <div class="callout">
 <strong>跨模型提示</strong>：

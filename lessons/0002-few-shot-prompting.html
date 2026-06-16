@@ -313,6 +313,12 @@ Anthropic 官方称其为 "one of the most reliable ways to steer Claude's outpu
   </div>
 </div>
 
+<h2>关于「Few-Shot vs Multishot」的术语说明</h2>
+
+<p>Anthropic 官方文档现在统一使用 <strong>multishot prompting</strong> 来指代多个示例的技术（见官方文档"Use examples effectively"章节）。Few-shot 是学术界沿用下来的叫法，两者本质相同。本课程保留「Few-Shot」作为教学术语，但建议你在阅读官方文档时留意 <strong>multishot</strong> 这个关键词。</p>
+
+<p>官方建议：将多个示例包裹在 <code>&lt;examples&gt;</code> 标签中，单个示例用 <code>&lt;example&gt;</code> 标签，这样 Claude 能更好地区分示例和指令。</p>
+
 <h2>跨模型适用性</h2>
 
 <p>Few-shot 是所有大模型通用的技术。区别在于：</p>

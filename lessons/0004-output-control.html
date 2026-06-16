@@ -180,7 +180,29 @@ Anthropic 官方原话：<em>"Claude's latest models have a more concise and nat
 
 <pre>在完成涉及工具调用的任务后，请简要总结你做了什么。</pre>
 
-<h2>原则五：跨模型的格式控制</h2>
+<h2>原则五：使用 Structured Outputs（生产推荐）</h2>
+
+<p>对于生产环境，如果输出必须是合法的 JSON，Anthropic <strong>强烈推荐使用 API 级别的 Structured Outputs</strong>（而不是纯 prompt 技巧）：</p>
+
+<pre>// 在 API 请求中声明 schema
+"response_format": {
+  "type": "json_schema",
+  "json_schema": {
+    "name": "analysis_result",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "sentiment": { "type": "string" },
+        "key_issues": { "type": "array", "items": { "type": "string" } }
+      },
+      "required": ["sentiment", "key_issues"]
+    }
+  }
+}</pre>
+
+<p class="callout"><strong>注意</strong>：prefilling（在 Assistant 回复中预填格式）在 Claude Fable 5、Mythos 5、Opus 4.8/4.7/4.6、Sonnet 4.6 上<strong>不支持</strong>。请使用 Structured Outputs 或 system prompt 指令代替。</p>
+
+<h2>原则六：跨模型的格式控制</h2>
 
 <table>
   <tr><th>技术</th><th>Claude</th><th>GPT-4o</th><th>Gemini</th><th>国产模型</th></tr>
@@ -222,6 +244,7 @@ Anthropic 官方原话：<em>"Claude's latest models have a more concise and nat
 <ol>
   <li><strong>正面指令</strong> — 说"要什么"比"不要什么"有效得多</li>
   <li><strong>输出格式指示器</strong> — 用 &lt;output_format&gt; 或直接给出结构模板</li>
+  <li><strong>Structured Outputs</strong> — 生产环境用 API 级别 schema 保证格式合规</li>
   <li><strong>风格匹配</strong> — 你的 prompt 风格决定 AI 的输出风格</li>
   <li><strong>前置声明</strong> — 在开头用标签声明风格和格式要求</li>
 </ol>
