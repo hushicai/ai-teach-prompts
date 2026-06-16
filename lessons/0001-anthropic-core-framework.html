@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 1: Anthropic 提示词核心框架</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --text: #1a1a2e;
+    --bg: #faf9f7;
+    --accent: #c44536;
+    --accent-light: #f0e6e3;
+    --border: #ddd8d0;
+    --code-bg: #f4f3ef;
+    --green: #2d6a4f;
+    --green-bg: #e8f5e9;
+    --red: #b71c1c;
+    --red-bg: #fbe9e7;
+    --blue: #1565c0;
+    --blue-bg: #e3f2fd;
+    --width: 680px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Serif SC', Georgia, serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+    font-size: 16px;
+    padding: 2rem 1rem;
+  }
+
+  .container {
+    max-width: var(--width);
+    margin: 0 auto;
+  }
+
+  /* Sidenotes (Tufte-inspired) */
+  .sidenote {
+    float: right;
+    clear: right;
+    margin-right: -260px;
+    width: 230px;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: #555;
+    font-family: 'Noto Sans SC', sans-serif;
+    margin-top: 0.3rem;
+    padding: 0.5rem 0.8rem;
+    background: #f4f3ef;
+    border-radius: 4px;
+  }
+
+  @media (max-width: 1000px) {
+    .sidenote {
+      float: none;
+      margin-right: 0;
+      width: 100%;
+      margin-top: 0.5rem;
+      margin-bottom: 0.5rem;
+    }
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    letter-spacing: -0.02em;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.95rem;
+    color: #777;
+    margin-bottom: 2.5rem;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 1rem;
+  }
+
+  h2 {
+    font-size: 1.4rem;
+    font-weight: 700;
+    margin-top: 2.5rem;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 2px solid var(--accent);
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 1.8rem;
+    margin-bottom: 0.5rem;
+  }
+
+  p { margin-bottom: 1rem; }
+
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.3rem; }
+
+  code {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85em;
+    background: var(--code-bg);
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+  }
+
+  pre {
+    background: #1e1e2e;
+    color: #cdd6f4;
+    padding: 1rem 1.2rem;
+    border-radius: 6px;
+    overflow-x: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    margin: 1rem 0;
+  }
+
+  .prompt-pair {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin: 1rem 0;
+  }
+
+  @media (max-width: 600px) {
+    .prompt-pair { grid-template-columns: 1fr; }
+  }
+
+  .prompt-box {
+    border-radius: 6px;
+    padding: 1rem;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    line-height: 1.6;
+    white-space: pre-wrap;
+  }
+
+  .prompt-bad {
+    background: var(--red-bg);
+    border-left: 3px solid var(--red);
+  }
+
+  .prompt-good {
+    background: var(--green-bg);
+    border-left: 3px solid var(--green);
+  }
+
+  .label-bad {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--red);
+    margin-bottom: 0.3rem;
+  }
+
+  .label-good {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--green);
+    margin-bottom: 0.3rem;
+  }
+
+  /* Quiz */
+  .quiz {
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.04);
+  }
+
+  .quiz-question {
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+  }
+
+  .quiz-option {
+    display: block;
+    margin: 0.4rem 0;
+    padding: 0.5rem 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.9rem;
+    transition: background 0.15s;
+  }
+
+  .quiz-option:hover { background: #f8f7f5; }
+  .quiz-option input { margin-right: 0.5rem; }
+
+  .quiz-option.correct {
+    background: var(--green-bg);
+    border-color: var(--green);
+  }
+
+  .quiz-option.wrong {
+    background: var(--red-bg);
+    border-color: var(--red);
+  }
+
+  .quiz-feedback {
+    margin-top: 0.8rem;
+    padding: 0.8rem;
+    border-radius: 4px;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.88rem;
+    display: none;
+  }
+
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--green-bg); color: var(--green); }
+  .quiz-feedback.wrong { background: var(--red-bg); color: var(--red); }
+
+  .btn {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--accent);
+    color: white;
+    border: none;
+    padding: 0.5rem 1.2rem;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    font-weight: 500;
+    margin-top: 0.5rem;
+  }
+
+  .btn:hover { opacity: 0.9; }
+
+  /* Exercise */
+  .exercise {
+    background: var(--blue-bg);
+    border: 1px solid var(--blue);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+  }
+
+  .exercise-title {
+    font-weight: 700;
+    color: var(--blue);
+    margin-bottom: 0.5rem;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.9rem;
+  }
+
+  .exercise textarea {
+    width: 100%;
+    min-height: 100px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.85rem;
+    padding: 0.8rem;
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    margin: 0.5rem 0;
+    resize: vertical;
+    background: white;
+  }
+
+  .exercise .hint {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.82rem;
+    color: #555;
+    margin-top: 0.3rem;
+  }
+
+  .callout {
+    background: #fff8e1;
+    border-left: 3px solid #f9a825;
+    padding: 1rem;
+    margin: 1rem 0;
+    border-radius: 0 4px 4px 0;
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.88rem;
+  }
+
+  .callout strong { color: #e65100; }
+
+  footer {
+    margin-top: 4rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border);
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.85rem;
+    color: #777;
+  }
+
+  .toc {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 2rem;
+  }
+
+  .toc ol {
+    margin: 0.5rem 0 0 1.2rem;
+  }
+  .toc li { margin-bottom: 0.2rem; }
+  .toc a { color: var(--accent); text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+
+  .tag {
+    display: inline-block;
+    background: var(--accent-light);
+    color: var(--accent);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.75rem;
+    padding: 0.1rem 0.4rem;
+    border-radius: 3px;
+  }
+
+  .reference-link {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.82rem;
+  }
+  .reference-link a { color: var(--blue); }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Anthropic 提示词核心框架</h1>
+<p class="subtitle">Lesson 1 &middot; 5 个基本原则 &middot; 约 20 分钟</p>
+
+<div class="toc">
+<strong>本课内容</strong>
+<ol>
+  <li><a href="#golden-rule">黄金法则：第一天上班的天才</a></li>
+  <li><a href="#clear-direct">清晰直接：不说废话</a></li>
+  <li><a href="#xml-tags">XML 标签：结构化输入</a></li>
+  <li><a href="#role">角色设定：给 AI 一个身份</a></li>
+  <li><a href="#context">上下文：解释"为什么"</a></li>
+  <li><a href="#summary">总结与下一步</a></li>
+</ol>
+</div>
+
+<p>
+Anthropic 的提示词工程方法论建立在几个简单但强大的原则上。
+无论你用哪个模型——Claude、GPT、Gemini 或是国产模型——这些基本原则都适用。
+一个结构清晰、意图明确的 prompt，远比一段冗长无序的描述有效。
+</p>
+
+<p class="reference-link">
+► 完整官方指南：<a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices" target="_blank">Anthropic Prompting Best Practices</a>
+</p>
+
+<!-- ============================================================ -->
+<h2 id="golden-rule">1. 黄金法则</h2>
+
+<div class="sidenote">
+Anthropic 官方原文：<em>"Think of Claude as a brilliant but very new employee (with amnesia) who needs explicit instructions."</em>
+</div>
+
+<p>Anthropic 提示词工程的核心理念只有一句话：</p>
+
+<p style="font-size:1.2rem; font-weight:700; text-align:center; margin:1.5rem 0; color:var(--accent);">
+把 AI 当作一个聪明但第一天上班的实习生——没有上下文、没有常识，但能完美执行清晰的指令。
+</p>
+
+<p>这意味着：</p>
+<ul>
+  <li><strong>不要假设 AI "知道"你的业务背景</strong> — 它不知道你的团队、你的代码库、你的用户</li>
+  <li><strong>不要假设 AI "能猜出"你想要什么</strong> — 如果你想要"超出预期的效果"，明确说出来</li>
+  <li><strong>不要用模糊的请求</strong> — "分析这份报告" 不如 "分析这份报告，列出三个关键风险，每个风险给出缓解建议"</li>
+</ul>
+
+<div class="callout">
+<strong>💡 自检技巧</strong>：写完 prompt 后，把它给一个不了解这个任务的同事看。如果他会困惑，那 AI 也会。
+</div>
+
+<!-- ============================================================ -->
+<h2 id="clear-direct">2. 清晰直接</h2>
+
+<p>最容易被低估的技巧：<strong>直接说你要什么</strong>。AI 不需要"礼貌"或"试探性"的语言——它需要精确的指令。</p>
+
+<div class="prompt-pair">
+  <div>
+    <div class="label-bad">✗ 模糊版</div>
+    <div class="prompt-box prompt-bad">帮我看看这段代码，有什么问题吗？</div>
+  </div>
+  <div>
+    <div class="label-good">✓ 清晰版</div>
+    <div class="prompt-box prompt-good">审查以下 Python 函数，找出：
+1. 潜在的 bug
+2. 性能瓶颈
+3. 类型安全问题
+
+对每个问题标注严重程度（高/中/低）。</div>
+  </div>
+</div>
+
+<div class="callout">
+<strong>关键区别</strong>：模糊版让 AI 自己决定"什么问题"——它可能给出泛泛的回答。清晰版限定了范围（bug/性能/类型安全）和格式（标注严重程度），结果更有用。
+</div>
+
+<div class="quiz">
+  <div class="quiz-question">✏️ 测验 1：以下哪条 prompt 最符合"清晰直接"原则？</div>
+  <label class="quiz-option">
+    <input type="radio" name="q1" value="a">
+    帮我优化一下这个 SQL 查询
+  </label>
+  <label class="quiz-option">
+    <input type="radio" name="q1" value="b">
+    优化这个 SQL 查询。目标是：减少全表扫描，利用已有索引。给出优化前后的执行计划对比。
+  </label>
+  <label class="quiz-option">
+    <input type="radio" name="q1" value="c">
+    这个 SQL 有点慢，你能看看吗？
+  </label>
+  <div class="quiz-feedback" id="q1-feedback"></div>
+  <button class="btn" onclick="checkQuiz('q1', 'b')">检查答案</button>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="xml-tags">3. XML 标签：结构化输入</h2>
+
+<div class="sidenote">
+这是 Anthropic 的标志性技巧。Claude 在训练过程中大量使用 XML 数据，因此天然擅长解析 &lt;tags&gt;。
+</div>
+
+<p>当 prompt 包含多种类型的内容时（指令、数据、例子、输出格式），用 XML 标签将它们分隔开。这不仅让 prompt 更可读，也让 AI 更精确地理解每部分的作用。</p>
+
+<pre>&lt;task&gt;
+将以下英文邮件翻译成中文，保持正式商务语气。
+&lt;/task&gt;
+
+&lt;email&gt;
+Dear Team, I would like to inform you that the Q3 budget has been approved.
+&lt;/email&gt;
+
+&lt;requirements&gt;
+- 不使用"亲爱的"作为开头
+- 署名统一用"此致"
+&lt;/requirements&gt;</pre>
+
+<p><strong>标签命名规范</strong>：</p>
+<ul>
+  <li>用有意义的英文名称：<code>&lt;instructions&gt;</code>、<code>&lt;context&gt;</code>、<code>&lt;examples&gt;</code>、<code>&lt;output&gt;</code></li>
+  <li>保持一致性：同一个概念始终用同一个标签名</li>
+  <li>支持嵌套：文档集可以放在 <code>&lt;documents&gt;</code> 中，每篇文档用 <code>&lt;document&gt;</code></li>
+</ul>
+
+<div class="quiz">
+  <div class="quiz-question">✏️ 测验 2：下面哪个是 XML 标签的最佳实践？</div>
+  <label class="quiz-option">
+    <input type="radio" name="q2" value="a">
+    把所有内容包在 &lt;text&gt;...&lt;/text&gt; 里
+  </label>
+  <label class="quiz-option">
+    <input type="radio" name="q2" value="b">
+    根据内容类型使用语义化标签：&lt;instructions&gt;、&lt;data&gt;、&lt;output_format&gt;
+  </label>
+  <label class="quiz-option">
+    <input type="radio" name="q2" value="c">
+    只用 &lt;prompt&gt; 一个标签包住所有内容
+  </label>
+  <div class="quiz-feedback" id="q2-feedback"></div>
+  <button class="btn" onclick="checkQuiz('q2', 'b')">检查答案</button>
+</div>
+
+<div class="exercise">
+  <div class="exercise-title">✍️ 练习 1：用 XML 重构 prompt</div>
+  <p>下面是一个"无结构"的 prompt。请用 XML 标签重新组织它：</p>
+  <div class="prompt-box prompt-bad" style="white-space:pre-wrap; margin-bottom:0.8rem;">请帮我写一个 Python 函数，它接受一个 URL 列表，下载每个 URL 的内容，然后返回一个字典，key 是 URL，value 是内容。要用 requests 库，处理超时和异常。每个 URL 超时设为 10 秒。</div>
+  <textarea id="exercise1" placeholder="用 XML 标签重写这个 prompt..."></textarea>
+  <div class="hint">提示：考虑用 &lt;task&gt;、&lt;requirements&gt;、&lt;libraries&gt;、&lt;output_format&gt; 等标签</div>
+  <button class="btn" onclick="toggleHint('ex1-hint')">查看参考答案</button>
+  <div id="ex1-hint" style="display:none; margin-top:0.8rem;">
+    <pre>&lt;task&gt;
+写一个 Python 函数，接受 URL 列表，下载每个 URL 的内容，返回 URL → 内容的字典。
+&lt;/task&gt;
+
+&lt;libraries&gt;
+使用 requests 库
+&lt;/libraries&gt;
+
+&lt;requirements&gt;
+- 处理连接超时和请求异常
+- 每个 URL 超时设置为 10 秒
+&lt;/requirements&gt;
+
+&lt;output_format&gt;
+dict[str, str] — key 是 URL，value 是下载到的内容文本
+&lt;/output_format&gt;</pre>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="role">4. 角色设定</h2>
+
+<div class="sidenote">
+Anthropic 官方用一个简单示例展示了角色设定的威力：一行 "You are a helpful coding assistant" 就足以改变输出风格。
+</div>
+
+<p>给 AI 一个明确的角色，会在系统层面调整它的输出风格、关注点和专业程度。</p>
+
+<pre>系统提示词（System Prompt）：
+你是一名资深 Python 后端工程师，精通性能优化和代码审查。
+在给出建议时，始终附带时间复杂度分析和内存占用估算。</pre>
+
+<p><strong>好的角色设定应该包含</strong>：</p>
+<ul>
+  <li>专业领域（资深 Python 后端工程师）</li>
+  <li>核心职责（代码审查、性能优化）</li>
+  <li>行为约束（始终附时间复杂度分析）</li>
+</ul>
+
+<div class="quiz">
+  <div class="quiz-question">✏️ 测验 3：以下哪个角色设定最可能得到专业、可落地的答案？</div>
+  <label class="quiz-option">
+    <input type="radio" name="q3" value="a">
+    你是一个助手
+  </label>
+  <label class="quiz-option">
+    <input type="radio" name="q3" value="b">
+    你是一名资深产品经理，有 10 年 B2B SaaS 经验。在分析需求时，请同时考虑技术可行性和商业价值，并标注每个建议的预期投入产出比。
+  </label>
+  <label class="quiz-option">
+    <input type="radio" name="q3" value="c">
+    你很聪明，请帮我想想
+  </label>
+  <div class="quiz-feedback" id="q3-feedback"></div>
+  <button class="btn" onclick="checkQuiz('q3', 'b')">检查答案</button>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="context">5. 上下文：解释"为什么"</h2>
+
+<div class="sidenote">
+Anthropic 发现，告诉 AI <em>为什么</em> 某些约束存在，比简单地说"不要做 X"效果好得多。AI 能从这个原因泛化到你没预料到的边界情况。
+</div>
+
+<p>大多数人在写 prompt 时只告诉 AI "要做什么"——但告诉它"为什么"同样重要。当 AI 理解了背后的原因，它就能在遇到未明确说明的情况时做出正确判断。</p>
+
+<div class="prompt-pair">
+  <div>
+    <div class="label-bad">✗ 只有规则</div>
+    <div class="prompt-box prompt-bad">不要用省略号。
+不要用表情符号。
+不要用被动语态。</div>
+  </div>
+  <div>
+    <div class="label-good">✓ 规则 + 原因</div>
+    <div class="prompt-box prompt-good">你的输出将通过 TTS 引擎朗读。
+因此：
+- 不要用省略号（TTS 无法正确朗读）
+- 不要用表情符号（TTS 会忽略它们）
+- 优先用主动语态（主动语态更自然）</div>
+  </div>
+</div>
+
+<p><strong>给上下文的方式</strong>：</p>
+<ul>
+  <li>这个输出的<strong>用途</strong>是什么？（面向客户？内部文档？）</li>
+  <li>目标<strong>受众</strong>是谁？（CEO？工程师？小白用户？）</li>
+  <li>这个任务在整个工作流中的<strong>位置</strong>？（前置调研？最终输出？）</li>
+  <li>成功的<strong>标准</strong>是什么？（什么算"好"？）</li>
+</ul>
+
+<div class="exercise">
+  <div class="exercise-title">✍️ 练习 2：添加上下文</div>
+  <p>下面这条 prompt 没有上下文。请添加一段上下文说明，让 AI 知道：输出将被展示给非技术背景的客户，目的是说服他们采纳你的技术方案。</p>
+  <div class="prompt-box prompt-bad" style="white-space:pre-wrap; margin-bottom:0.8rem;">总结这个架构迁移方案的关键优势。</div>
+  <textarea id="exercise2" placeholder="在 prompt 前添加上下文说明..."></textarea>
+  <div class="hint">提示：说明受众是谁、用途是什么、成功标准是什么</div>
+  <button class="btn" onclick="toggleHint('ex2-hint')">查看参考答案</button>
+  <div id="ex2-hint" style="display:none; margin-top:0.8rem;">
+    <pre>&lt;context&gt;
+你的输出将展示给非技术背景的客户高管，目的是说服他们批准架构迁移方案。他们关注的是：成本节省、风险降低、交付速度提升。不要使用技术术语，用具体数字和案例说明优势。
+&lt;/context&gt;
+
+总结这个架构迁移方案的关键优势。</pre>
+  </div>
+</div>
+
+<!-- ============================================================ -->
+<h2 id="summary">总结与下一步</h2>
+
+<p>这 5 个原则构成了 Anthropic 提示词工程的基础。你可以把它们当作写任何 prompt 前的检查清单：</p>
+
+<ol>
+  <li><strong>黄金法则</strong> — 当作第一天上班的实习生</li>
+  <li><strong>清晰直接</strong> — 明确说你想要什么，不想要什么</li>
+  <li><strong>XML 标签</strong> — 用结构化分隔指令、数据、输出格式</li>
+  <li><strong>角色设定</strong> — 给 AI 一个专业身份和行为约束</li>
+  <li><strong>解释原因</strong> — 告诉 AI 为什么，让它帮你应对边界情况</li>
+</ol>
+
+<div class="callout">
+<strong>🔗 跨模型适用性</strong>：这 5 个原则是所有大模型通用的。Claude 对 XML 标签特别敏感，但 GPT、Gemini、DeepSeek 等模型同样能从结构化 prompt 中受益。角色设定和上下文解释更是通用技巧。
+</div>
+
+<p><strong>推荐延伸阅读</strong>：<a href="https://github.com/anthropics/prompt-eng-interactive-tutorial" target="_blank">Anthropic 官方交互式教程 (GitHub)</a> — 第 1–3 章与本课内容对应，可以继续深入学习。</p>
+
+<p><strong>课后问题</strong>：对本课内容有任何疑问，或者想深入讨论某个技巧，随时可以问我。课程中的练习也可以发给我 review。</p>
+
+<footer>
+  Lesson 1 of Anthropic 提示词工程 &middot; 基于 <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices">Anthropic Prompting Best Practices</a>
+</footer>
+
+</div>
+
+<script>
+function checkQuiz(quizId, correctAnswer) {
+  const quiz = document.getElementById(quizId + '-feedback');
+  const selected = document.querySelector(`input[name="${quizId}"]:checked`);
+
+  if (!selected) {
+    quiz.textContent = '请先选择一个选项。';
+    quiz.className = 'quiz-feedback show wrong';
+    return;
+  }
+
+  // Clear previous styling
+  document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => {
+    el.parentElement.classList.remove('correct', 'wrong');
+  });
+
+  const label = selected.parentElement;
+  if (selected.value === correctAnswer) {
+    label.classList.add('correct');
+    quiz.textContent = '✓ 正确！' + getExplanation(quizId);
+    quiz.className = 'quiz-feedback show correct';
+  } else {
+    label.classList.add('wrong');
+    // Also highlight the correct one
+    document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => {
+      if (el.value === correctAnswer) el.parentElement.classList.add('correct');
+    });
+    quiz.textContent = '✗ 再想想。' + getExplanation(quizId);
+    quiz.className = 'quiz-feedback show wrong';
+  }
+}
+
+function getExplanation(quizId) {
+  const explanations = {
+    'q1': '选项 B 明确指定了优化目标（减少全表扫描、利用已有索引）和输出格式（执行计划对比），符合"清晰直接"原则。',
+    'q2': '语义化的 XML 标签让 AI 能准确区分不同部分的作用。单一标签失去了结构化意义。',
+    'q3': '选项 B 给出了具体的领域（B2B SaaS）、经验年限（10 年）、分析维度（技术+商业）和行为约束（标注投入产出比）。'
+  };
+  return explanations[quizId] || '';
+}
+
+function toggleHint(id) {
+  const el = document.getElementById(id);
+  el.style.display = el.style.display === 'none' ? 'block' : 'none';
+}
+</script>
+
+</body>
+</html>

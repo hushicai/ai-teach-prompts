@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Anthropic 提示词工程 — 交互式课程</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+  :root {
+    --text: #1a1a2e;
+    --bg: #faf9f7;
+    --accent: #c44536;
+    --accent-light: #f0e6e3;
+    --border: #ddd8d0;
+    --width: 680px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Serif SC', Georgia, serif;
+    color: var(--text);
+    background: var(--bg);
+    line-height: 1.8;
+  }
+
+  .container {
+    max-width: var(--width);
+    margin: 0 auto;
+    padding: 60px 24px;
+  }
+
+  h1 {
+    font-size: 2rem;
+    font-weight: 700;
+    margin-bottom: 8px;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 1rem;
+    color: #666;
+    margin-bottom: 40px;
+    font-family: 'Noto Sans SC', sans-serif;
+  }
+
+  .lesson-list {
+    list-style: none;
+  }
+
+  .lesson-item {
+    display: block;
+    padding: 20px 24px;
+    margin-bottom: 12px;
+    background: white;
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    text-decoration: none;
+    color: var(--text);
+    transition: all 0.2s;
+  }
+
+  .lesson-item:hover {
+    border-color: var(--accent);
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    transform: translateY(-1px);
+  }
+
+  .lesson-num {
+    font-family: 'Noto Sans SC', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: var(--accent);
+    letter-spacing: 0.5px;
+  }
+
+  .lesson-title {
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Anthropic 提示词工程</h1>
+  <p class="subtitle">将提示词工程方法论内化为核心技能</p>
+
+  <div class="lesson-list">
+    <a class="lesson-item" href="lessons/0001-anthropic-core-framework.html">
+      <div class="lesson-num">LESSON 1</div>
+      <div class="lesson-title">Anthropic 提示词核心框架</div>
+    </a>
+    <a class="lesson-item" href="lessons/0002-few-shot-prompting.html">
+      <div class="lesson-num">LESSON 2</div>
+      <div class="lesson-title">Few-Shot Prompting — 用示例驱动输出</div>
+    </a>
+  </div>
+</div>
+</body>
+</html>
