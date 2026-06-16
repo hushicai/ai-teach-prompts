@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 6: System Prompt 设计 — 构建高质量系统提示词</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root { --text: #1a1a2e; --bg: #faf9f7; --accent: #1a6b5a; --accent-light: #e0f2f1; --border: #ddd8d0; --code-bg: #f4f3ef; --green: #2d6a4f; --green-bg: #e8f5e9; --red: #b71c1c; --red-bg: #fbe9e7; --width: 680px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Serif SC', Georgia, serif; color: var(--text); background: var(--bg); line-height: 1.8; font-size: 16px; padding: 2rem 1rem; }
+  .container { max-width: var(--width); margin: 0 auto; }
+  .sidenote { float: right; clear: right; margin-right: -260px; width: 230px; font-size: 0.78rem; line-height: 1.5; color: #555; font-family: 'Noto Sans SC', sans-serif; margin-top: 0.3rem; padding: 0.5rem 0.8rem; background: #f4f3ef; border-radius: 4px; }
+  @media (max-width: 1000px) { .sidenote { float: none; margin-right: 0; width: 100%; } }
+  h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--accent); }
+  .subtitle { font-family: 'Noto Sans SC', sans-serif; font-size: 0.95rem; color: #777; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  h2 { font-size: 1.4rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.8rem; margin-bottom: 0.5rem; }
+  p { margin-bottom: 1rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.3rem; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 1rem 1.2rem; border-radius: 6px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; margin: 1rem 0; white-space: pre-wrap; }
+  .prompt-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0; }
+  @media (max-width: 600px) { .prompt-pair { grid-template-columns: 1fr; } }
+  .prompt-box { border-radius: 6px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; }
+  .prompt-bad { background: var(--red-bg); border-left: 3px solid var(--red); }
+  .prompt-good { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .label-bad { font-family: 'Noto Sans SC', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--red); margin-bottom: 0.3rem; }
+  .label-good { font-family: 'Noto Sans SC', sans-serif; font-size: 0.75rem; font-weight: 700; color: var(--green); margin-bottom: 0.3rem; }
+  .quiz { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .quiz-question { font-weight: 600; margin-bottom: 0.8rem; }
+  .quiz-option { display: block; margin: 0.4rem 0; padding: 0.5rem 0.8rem; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .quiz-option:hover { background: #f8f7f5; }
+  .quiz-option input { margin-right: 0.5rem; }
+  .quiz-option.correct { background: var(--green-bg); border-color: var(--green); }
+  .quiz-option.wrong { background: var(--red-bg); border-color: var(--red); }
+  .quiz-feedback { margin-top: 0.8rem; padding: 0.8rem; border-radius: 4px; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--green-bg); color: var(--green); }
+  .quiz-feedback.wrong { background: var(--red-bg); color: var(--red); }
+  .btn { font-family: 'Noto Sans SC', sans-serif; background: #1a1a2e; color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.88rem; margin-top: 0.5rem; }
+  .btn:hover { opacity: 0.85; }
+  .exercise { background: var(--accent-light); border: 1px solid var(--accent); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; }
+  .exercise-title { font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .exercise textarea { width: 100%; min-height: 120px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 4px; margin: 0.5rem 0; resize: vertical; background: white; }
+  .exercise .hint { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; color: #555; }
+  .callout { background: #fff8e1; border-left: 3px solid #f9a825; padding: 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; }
+  .callout strong { color: #e65100; }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-family: 'Noto Sans SC', sans-serif; font-size: 0.85rem; color: #777; }
+  .reference-link { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; }
+  .reference-link a { color: var(--blue); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  th, td { border: 1px solid var(--border); padding: 0.6rem 0.8rem; text-align: left; }
+  th { background: var(--code-bg); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>System Prompt 设计</h1>
+<p class="subtitle">Lesson 6 &middot; 构建高质量系统提示词 &middot; 约 25 分钟</p>
+
+<p>
+前面几课关注的是<em>用户消息</em>层面的技巧。本课上升到<strong>系统提示词（System Prompt）</strong>层面——
+这是你在 API 或应用层面设置的基础指令，它<strong>贯穿整个对话</strong>，定义 AI 的身份、行为和边界。
+</p>
+
+<p class="reference-link">
+► 官方参考：<a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#give-claude-a-role" target="_blank">Anthropic — Give Claude a role</a> · <a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank">Context Engineering</a>
+</p>
+
+<div class="sidenote">
+Anthropic 在 Context Engineering 文章中指出：一个 200 token 的系统提示词往往比 2000 token 的效果更好。精简才是王道。
+</div>
+
+<h2>System Prompt vs User Prompt</h2>
+
+<table>
+  <tr><th></th><th>System Prompt</th><th>User Prompt</th></tr>
+  <tr><td>作用</td><td>设置身份、行为边界、全局规则</td><td>每次交互的具体任务</td></tr>
+  <tr><td>频率</td><td>一次设定，贯穿对话</td><td>每次对话都可能不同</td></tr>
+  <tr><td>风格</td><td>简洁、精确、持久</td><td>灵活、任务特定</td></tr>
+  <tr><td>典型内容</td><td>角色定义、行为准则、输出默认值</td><td>具体问题、文档、示例</td></tr>
+  <tr><td>写不好后果</td><td>整个对话偏航</td><td>单次回答不准</td></tr>
+</table>
+
+<div class="callout">
+<strong>经验法则</strong>：把所有"这个 AI 应该是什么样的"信息放 System Prompt。把所有"这次我要它做什么"的信息放 User Prompt。
+</div>
+
+<h2>优秀 System Prompt 的四要素</h2>
+
+<h3>1. 角色定义</h3>
+<p>一句话说清楚"你是谁"——不是客气话，而是精准的身份描述。</p>
+
+<pre>你是一名资深数据工程师，精通 ETL 管道设计和大规模数据处理。
+你的输出始终以可运行为优先，次优方案会在备注中标注。</pre>
+
+<h3>2. 行为约束</h3>
+<p>明确什么能做、什么不能做。记住 L4 的"正面指令"原则：</p>
+
+<pre>行为准则：
+- 在给出代码前，先用 &lt;approach&gt; 简要说明方案思路
+- 代码必须包含完整的类型注解
+- 对任何不确定的 API 行为，标注 TODO 而不是虚构
+- 默认用 Python，只有用户明确要求时才用其他语言</pre>
+
+<h3>3. 输出默认值</h3>
+<p>设定输出的默认风格和格式：</p>
+
+<pre>输出规范：
+- 不要开场白，直接给出核心内容
+- 代码块标注语言（```python）
+- 复杂逻辑必须附测试用例
+- 多方案对比时用表格</pre>
+
+<h3>4. 上下文（为什么）</h3>
+<p>告诉 AI 这个 System Prompt 背后的<em>原因</em>——它可以在你没想到的场景中做出正确判断。</p>
+
+<pre>上下文：
+你的回答会直接展示给非技术客户。他们不需要了解实现细节，
+只需要知道方案能解决他们的问题、需要多少预算、多长时间。</pre>
+
+<div class="quiz">
+  <div class="quiz-question">✏️ 测验 1：以下哪个写法更适合 System Prompt？</div>
+  <label class="quiz-option"><input type="radio" name="q1" value="a"> 你好 Claude，请做一个代码助手，谢谢。</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="b"> 你是一名专注于 Python 后端的资深工程师。输出规范：先方案后代码，含类型注解，不虚构 API。</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="c"> 请帮我写代码。</label>
+  <div class="quiz-feedback" id="q1-feedback"></div>
+  <button class="btn" onclick="checkQuiz('q1', 'b')">检查答案</button>
+</div>
+
+<h2>黄金比例：最小充分原则</h2>
+
+<div class="sidenote">
+Anthropic 观察：很多团队把 system prompt 从 100 字堆到 2000 字，但效果没有提升。每加一条规则，都是潜在的冲突点。从最小版本开始测试，只加你<em>看到</em>有问题的规则。
+</div>
+
+<p>一个常见错误是把 system prompt 写成「保险条款」——试图穷举所有可能的规则。
+Anthropic 推荐相反的路径：</p>
+
+<ol>
+  <li><strong>从最小版本开始</strong>：只写角色定义 + 一条关键约束</li>
+  <li><strong>观察失败模式</strong>：用真实场景测试，记录 AI 在哪些地方不符合预期</li>
+  <li><strong>精准修补</strong>：每发现一个问题，加一条对应规则</li>
+  <li><strong>定期裁剪</strong>：如果某条规则从未触发过，删除它</li>
+</ol>
+
+<p>示例演化：</p>
+
+<pre>// 版本 1（最小）
+你是一名 Python 后端工程师。
+
+// 版本 2（修复了"不写测试"的问题）
+你是一名 Python 后端工程师。所有代码必须附测试用例。
+
+// 版本 3（修复了"虚构 API"的问题）
+你是一名 Python 后端工程师。所有代码必须附测试用例。
+对不确定的 API 行为，标注 // TODO 而不是虚构。</pre>
+
+<h2>特殊情况：过度主动 vs 过度保守</h2>
+
+<p>Claude 新模型默认更主动。如果你想要更保守的行为，显式声明：</p>
+
+<pre>除非用户明确要求修改文件，否则默认提供信息和建议。
+当用户意图不明确时，先澄清再行动。</pre>
+
+<p>如果你想要更主动的行为：</p>
+
+<pre>默认情况下，直接实施修改而不是只给建议。
+如果用户意图不明确，推断最有用且可逆的操作并执行。</pre>
+
+<div class="exercise">
+  <div class="exercise-title">✍️ 练习：为一个客服助手写 System Prompt</div>
+  <p>你需要为一个电商客服 AI 设计 system prompt。要求：友好但有边界、快速识别退换货请求、不虚构政策、对超出范围的请求转人工。</p>
+  <textarea id="exercise1" placeholder="写出包含角色定义+行为约束+输出规范的 system prompt..."></textarea>
+  <div class="hint">提示：包含四要素——角色、约束、默认值、上下文（为什么）。</div>
+  <button class="btn" onclick="toggleHint('ex1-hint')">查看参考答案</button>
+  <div id="ex1-hint" style="display:none; margin-top:0.8rem;">
+    <pre>你是一名电商客服助手，专为 [XX商城] 提供客户支持。
+
+角色：
+亲和、高效的客服代表。用简短句子回复，不啰嗦。
+
+行为准则：
+- 退换货请求：立即识别并引导到退换货流程，不讨论其他话题
+- 政策边界：只回答[XX商城]官方政策中明确涵盖的问题
+- 超出范围：对超出政策范围的问题，说"我需要帮你转接人工客服"并结束
+- 严禁虚构政策——不确定就说不知道
+
+上下文：
+你的回复将直接展示给客户。他们正在焦急等待帮助。
+快速、准确的回答比"全面但啰嗦"更有价值。</pre>
+  </div>
+</div>
+
+<h2>跨模型适用性</h2>
+
+<table>
+  <tr><th>技巧</th><th>所有模型</th><th>说明</th></tr>
+  <tr><td>角色定义</td><td>★★★</td><td>所有模型都受益于精准的角色设定</td></tr>
+  <tr><td>正面指令约束</td><td>★★★</td><td>说"要什么"而非"不要什么"是通用原则</td></tr>
+  <tr><td>最小充分原则</td><td>★★★</td><td>适用于所有情况</td></tr>
+  <tr><td>上下文/原因</td><td>★★★</td><td>所有模型都能从"为什么"中泛化</td></tr>
+  <tr><td>XML 标签分段</td><td>★★☆</td><td>Claude 最适合，其他模型也能受益</td></tr>
+</table>
+
+<h2>总结</h2>
+<ol>
+  <li><strong>System Prompt 定义角色和行为</strong>，User Prompt 描述具体任务</li>
+  <li><strong>四要素</strong>：角色定义 + 行为约束 + 输出默认值 + 上下文</li>
+  <li><strong>最小充分</strong>：从小开始，观察失败，精准修补</li>
+  <li><strong>主动 vs 保守</strong>：显式声明你期望的行为倾向</li>
+  <li><strong>正面指令</strong>：说"要什么"比"不要什么"效果更好</li>
+</ol>
+
+<p class="callout"><strong>课后行动</strong>：打开你正在用的 AI 工具的 System Prompt（如果有的话），用"最小充分原则"审查它——哪些规则是必要的？哪些可以删掉？</p>
+
+<p><strong>推荐延伸阅读</strong>：<a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank">Anthropic — Effective Context Engineering for AI Agents</a></p>
+<p><strong>课后问题</strong>：对本课内容有任何疑问，随时可以问我。</p>
+
+<footer>Lesson 6 of Anthropic 提示词工程 &middot; 上节课：<a href="0005-long-context.html">Lesson 5: 长上下文提示词工程</a></footer>
+</div>
+
+<script>
+function checkQuiz(quizId, correctAnswer) {
+  const quizEl = document.getElementById(quizId + '-feedback');
+  const selected = document.querySelector(`input[name="${quizId}"]:checked`);
+  if (!selected) { quizEl.textContent = '请先选择一个选项。'; quizEl.className = 'quiz-feedback show wrong'; return; }
+  document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => el.parentElement.classList.remove('correct', 'wrong'));
+  const label = selected.parentElement;
+  if (selected.value === correctAnswer) {
+    label.classList.add('correct');
+    quizEl.textContent = '✓ 正确！' + getExplanation(quizId); quizEl.className = 'quiz-feedback show correct';
+  } else {
+    label.classList.add('wrong');
+    document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => { if (el.value === correctAnswer) el.parentElement.classList.add('correct'); });
+    quizEl.textContent = '✗ 再想想。' + getExplanation(quizId); quizEl.className = 'quiz-feedback show wrong';
+  }
+}
+function getExplanation(quizId) {
+  return { 'q1': '选项 B 给出了明确的角色定位（Python 后端工程师）、行为约束（先方案后代码、类型注解、不虚构 API），是合格的 system prompt。' }[quizId] || '';
+}
+function toggleHint(id) { const el = document.getElementById(id); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+</script>
+</body>
+</html>
