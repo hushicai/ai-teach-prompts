@@ -19,6 +19,7 @@
 | 7 | Prompt Chaining — 多步提示词链 |
 | 8 | 幻觉预防与可靠性提升 |
 | 9 | 工具调用与 Agent 系统 |
+| 10 | Context Engineering — 上下文工程与状态管理 |
 
 （持续更新中）
 

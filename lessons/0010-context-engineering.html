@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 10: Context Engineering — 上下文工程与状态管理</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root { --text: #1a1a2e; --bg: #faf9f7; --accent: #5d4037; --accent-light: #efebe9; --border: #ddd8d0; --code-bg: #f4f3ef; --green: #2d6a4f; --green-bg: #e8f5e9; --width: 680px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Serif SC', Georgia, serif; color: var(--text); background: var(--bg); line-height: 1.8; font-size: 16px; padding: 2rem 1rem; }
+  .container { max-width: var(--width); margin: 0 auto; }
+  .sidenote { float: right; clear: right; margin-right: -260px; width: 230px; font-size: 0.78rem; line-height: 1.5; color: #555; font-family: 'Noto Sans SC', sans-serif; margin-top: 0.3rem; padding: 0.5rem 0.8rem; background: #f4f3ef; border-radius: 4px; }
+  @media (max-width: 1000px) { .sidenote { float: none; margin-right: 0; width: 100%; } }
+  h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--accent); }
+  .subtitle { font-family: 'Noto Sans SC', sans-serif; font-size: 0.95rem; color: #777; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  h2 { font-size: 1.4rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.8rem; margin-bottom: 0.5rem; }
+  p { margin-bottom: 1rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.3rem; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 1rem 1.2rem; border-radius: 6px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; margin: 1rem 0; white-space: pre-wrap; }
+  .prompt-box { border-radius: 6px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; }
+  .prompt-good { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .quiz { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .quiz-question { font-weight: 600; margin-bottom: 0.8rem; }
+  .quiz-option { display: block; margin: 0.4rem 0; padding: 0.5rem 0.8rem; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .quiz-option:hover { background: #f8f7f5; }
+  .quiz-option input { margin-right: 0.5rem; }
+  .quiz-option.correct { background: var(--green-bg); border-color: var(--green); }
+  .quiz-option.wrong { background: var(--red-bg); border-color: var(--red); }
+  .quiz-feedback { margin-top: 0.8rem; padding: 0.8rem; border-radius: 4px; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--green-bg); color: var(--green); }
+  .quiz-feedback.wrong { background: var(--red-bg); color: var(--red); }
+  .btn { font-family: 'Noto Sans SC', sans-serif; background: #1a1a2e; color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.88rem; margin-top: 0.5rem; }
+  .btn:hover { opacity: 0.85; }
+  .exercise { background: var(--accent-light); border: 1px solid var(--accent); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; }
+  .exercise-title { font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .exercise textarea { width: 100%; min-height: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 4px; margin: 0.5rem 0; resize: vertical; background: white; }
+  .exercise .hint { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; color: #555; }
+  .callout { background: #fff8e1; border-left: 3px solid #f9a825; padding: 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; }
+  .callout strong { color: #e65100; }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-family: 'Noto Sans SC', sans-serif; font-size: 0.85rem; color: #777; }
+  .reference-link { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; }
+  .reference-link a { color: var(--blue); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  th, td { border: 1px solid var(--border); padding: 0.6rem 0.8rem; text-align: left; }
+  th { background: var(--code-bg); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Context Engineering — 上下文工程</h1>
+<p class="subtitle">Lesson 10 &middot; 跨会话状态管理 &middot; 约 25 分钟</p>
+
+<p>
+Anthropic 将<strong>Context Engineering</strong>定义为提示词工程的自然演进——
+从"写好单次 prompt"进化到"管理整个对话生命周期的信息流"。
+</p>
+
+<p>
+当 Agent 需要长时间运行时，上下文会耗尽、信息会丢失、状态会混乱。
+本课教你如何设计<strong>跨会话</strong>工作的 prompt 系统。
+</p>
+
+<p class="reference-link">
+► 官方参考：<a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank">Anthropic — Effective Context Engineering</a>
+</p>
+
+<div class="sidenote">
+Claude 4.6+ 具有 <strong>context awareness</strong>——能感知还剩多少 token 预算。你可以利用这一点让它在上下文耗尽前保存状态。
+</div>
+
+<h2>问题：上下文窗口不是无限的</h2>
+
+<p>即使模型支持 200K token，长期运行的任务会面临：</p>
+
+<ul>
+  <li><strong>上下文耗尽</strong> — 对话太长，早期信息丢失</li>
+  <li><strong>注意力稀释</strong> — 关键指令淹没在历史对话中</li>
+  <li><strong>状态混乱</strong> — Agent 忘记做了什么、做到哪了</li>
+</ul>
+
+<p>解决方案不是"换更大的上下文窗口"，而是<strong>主动管理上下文</strong>。</p>
+
+<h2>策略一：结构化状态文件</h2>
+
+<p>把关键状态写入外部文件，新会话开始时读取：</p>
+
+<pre>// 结构化状态文件 — state.json
+{
+  "session": 3,
+  "completed_tasks": ["authentication_flow", "user_management"],
+  "current_task": "api_endpoints",
+  "remaining": ["notification_service", "reporting"],
+  "known_issues": [
+    { "task": "user_management", "issue": "test #42 偶发失败", "status": "investigating" }
+  ]
+}
+
+// 进度笔记 — progress.txt
+Session 3 progress:
+- Fixed auth token validation
+- Updated user model
+- Next: investigate test #42 failure
+- Note: do not remove tests</pre>
+
+<p>在新会话开始时：</p>
+
+<pre>请从这些文件中恢复工作状态：
+1. 读取 progress.txt 了解进度
+2. 读取 state.json 了解任务列表
+3. 读取最近的 git log 了解已完成的变更
+然后继续当前任务。</pre>
+
+<h2>策略二：上下文感知</h2>
+
+<p>Claude 4.6+ 能感知剩余 token。你可以利用这个能力：</p>
+
+<pre>&lt;context_management&gt;
+你的上下文窗口将在接近上限时自动压缩，你可以在压缩前保存进度。
+
+因此：
+- 不要因为 token 预算问题提前中止任务
+- 当你接近 token 上限时，将当前进度和状态保存到 progress.txt 和 state.json
+- 在上下文刷新后，从这些文件中恢复
+- 不要人为提前结束任务
+&lt;/context_management&gt;</pre>
+
+<h2>策略三：首次上下文设计</h2>
+
+<p>跨会话工作的第一个上下文窗口最重要——它建立框架：</p>
+
+<pre>// 第一个会话的 prompt
+这是这个项目的第一个工作会话。请：
+1. 分析项目结构，创建一份状态文件（state.json）跟踪进度
+2. 为每个模块创建测试框架
+3. 创建 setup.sh 脚本，简化后续的环境配置
+
+在后续会话中，你需要：
+1. 读取 state.json 恢复进度
+2. 运行 setup.sh 恢复环境
+3. 继续按 state.json 中的列表工作</pre>
+
+<div class="quiz">
+  <div class="quiz-question">✏️ 测验 1：跨会话工作最关键的设计是什么？</div>
+  <label class="quiz-option"><input type="radio" name="q1" value="a"> 用最大的上下文窗口，避免溢出</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="b"> 在第一个会话中建立状态跟踪机制，后续会话从这里恢复</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="c"> 每次重新开始，不依赖之前的上下文</label>
+  <div class="quiz-feedback" id="q1-feedback"></div>
+  <button class="btn" onclick="checkQuiz('q1', 'b')">检查答案</button>
+</div>
+
+<h2>策略四：Git 作为状态层</h2>
+
+<p>Anthropic 推荐将 git 作为跨会话的状态管理工具：</p>
+
+<ul>
+  <li><strong>提交记录 = 进度日志</strong> — 每个提交记录了完成的工作</li>
+  <li><strong>diff = 当前变更</strong> — 新会话可以从 git diff 了解未完成的工作</li>
+  <li><strong>分支 = 探索路径</strong> — 不同方案可以并行尝试</li>
+  <li><strong>可回滚</strong> — 出错了可以安全恢复</li>
+</ul>
+
+<p>在新会话中：</p>
+<pre>请先运行 git log --oneline -10 了解最近完成的工作，
+然后运行 git diff --stat 了解当前的未完成变更，
+再继续工作。</pre>
+
+<h2>策略五：启动脚本</h2>
+
+<p>在第一个会话中创建恢复脚本，后续会话直接使用：</p>
+
+<pre>// init.sh
+#!/bin/bash
+echo "=== 状态恢复 ==="
+cat state.json
+echo "=== 进度 ==="
+cat progress.txt
+echo "=== 最近提交 ==="
+git log --oneline -5
+echo "=== 测试状态 ==="
+python -m pytest --summary 2>/dev/null || echo "测试框架尚未配置"</pre>
+
+<p>在新会话中：</p>
+<pre>运行 init.sh 恢复工作状态，然后继续 progress.txt 中记录的任务。</pre>
+
+<div class="exercise">
+  <div class="exercise-title">✍️ 练习：设计跨会话状态恢复流程</div>
+  <p>你正在开发一个为期 5 天的数据分析项目。请设计一个 prompt，告诉 AI 如何在新会话中恢复工作状态。</p>
+  <textarea id="exercise1" placeholder="写出新会话开始时的恢复 prompt..."></textarea>
+  <div class="hint">提示：告诉 AI 读取哪些文件、运行什么命令、如何检查进度。</div>
+  <button class="btn" onclick="toggleHint('ex1-hint')">查看参考答案</button>
+  <div id="ex1-hint" style="display:none; margin-top:0.8rem;">
+    <pre>欢迎回来。请按以下步骤恢复工作状态：
+
+1. 运行 bash init.sh 查看当前进度
+2. 读取 state.json 了解任务清单和完成情况
+3. 读取 progress.txt 了解详细进度和已知问题
+4. 运行 git log --oneline -10 检查最近的提交
+5. 找出 state.json 中第一个未完成的任务并开始工作
+
+重要规则：
+- 不要重复已完成的工作
+- 如果发现之前的任务标注为 completed 但实际未完成，更新 state.json
+- 每个任务完成后更新 state.json 和 progress.txt</pre>
+  </div>
+</div>
+
+<h2>总结</h2>
+<ol>
+  <li><strong>Context Engineering</strong> 是提示词工程的进化——管理整个生命周期的信息流</li>
+  <li><strong>结构化状态文件</strong> — JSON 跟踪任务、纯文本跟踪进度</li>
+  <li><strong>上下文感知</strong> — 利用模型的 token 感知能力自动保存</li>
+  <li><strong>首次上下文</strong> — 第一个会话建立框架，后续会话恢复</li>
+  <li><strong>Git 即是状态</strong> — 提交记录是最可靠的状态层</li>
+  <li><strong>启动脚本</strong> — init.sh 一键恢复</li>
+</ol>
+
+<p><strong>推荐延伸阅读</strong>：<a href="https://www.anthropic.com/engineering/effective-context-engineering-for-ai-agents" target="_blank">Anthropic — Effective Context Engineering</a></p>
+<p><strong>课后问题</strong>：对本课内容有任何疑问，随时可以问我。</p>
+
+<footer>Lesson 10 of Anthropic 提示词工程</footer>
+</div>
+
+<script>
+function checkQuiz(quizId, correctAnswer) {
+  const quizEl = document.getElementById(quizId + '-feedback');
+  const selected = document.querySelector(`input[name="${quizId}"]:checked`);
+  if (!selected) { quizEl.textContent = '请先选择一个选项。'; quizEl.className = 'quiz-feedback show wrong'; return; }
+  document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => el.parentElement.classList.remove('correct', 'wrong'));
+  const label = selected.parentElement;
+  if (selected.value === correctAnswer) {
+    label.classList.add('correct');
+    quizEl.textContent = '✓ 正确！' + getExplanation(quizId); quizEl.className = 'quiz-feedback show correct';
+  } else {
+    label.classList.add('wrong');
+    document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => { if (el.value === correctAnswer) el.parentElement.classList.add('correct'); });
+    quizEl.textContent = '✗ 再想想。' + getExplanation(quizId); quizEl.className = 'quiz-feedback show wrong';
+  }
+}
+function getExplanation(quizId) {
+  return { 'q1': '跨会话工作的核心是在第一个会话中建立可持久化的状态机制。后续会话通过读取状态文件而非依赖记忆来恢复。' }[quizId] || '';
+}
+function toggleHint(id) { const el = document.getElementById(id); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+</script>
+</body>
+</html>
