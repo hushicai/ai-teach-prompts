@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 14: 跨模型迁移 — Claude → GPT → Gemini → 国产</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root { --text: #1a1a2e; --bg: #faf9f7; --accent: #b85c1a; --accent-light: #fae5d3; --border: #ddd8d0; --code-bg: #f4f3ef; --green: #2d6a4f; --green-bg: #e8f5e9; --width: 680px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Serif SC', Georgia, serif; color: var(--text); background: var(--bg); line-height: 1.8; font-size: 16px; padding: 2rem 1rem; }
+  .container { max-width: var(--width); margin: 0 auto; }
+  .sidenote { float: right; clear: right; margin-right: -260px; width: 230px; font-size: 0.78rem; line-height: 1.5; color: #555; font-family: 'Noto Sans SC', sans-serif; margin-top: 0.3rem; padding: 0.5rem 0.8rem; background: #f4f3ef; border-radius: 4px; }
+  @media (max-width: 1000px) { .sidenote { float: none; margin-right: 0; width: 100%; } }
+  h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--accent); }
+  .subtitle { font-family: 'Noto Sans SC', sans-serif; font-size: 0.95rem; color: #777; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  h2 { font-size: 1.4rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.8rem; margin-bottom: 0.5rem; }
+  p { margin-bottom: 1rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.3rem; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 1rem 1.2rem; border-radius: 6px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; margin: 1rem 0; white-space: pre-wrap; }
+  .prompt-box { border-radius: 6px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; }
+  .prompt-good { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .quiz { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .quiz-question { font-weight: 600; margin-bottom: 0.8rem; }
+  .quiz-option { display: block; margin: 0.4rem 0; padding: 0.5rem 0.8rem; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .quiz-option:hover { background: #f8f7f5; }
+  .quiz-option input { margin-right: 0.5rem; }
+  .quiz-option.correct { background: var(--green-bg); border-color: var(--green); }
+  .quiz-option.wrong { background: var(--red-bg); border-color: var(--red); }
+  .quiz-feedback { margin-top: 0.8rem; padding: 0.8rem; border-radius: 4px; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--green-bg); color: var(--green); }
+  .quiz-feedback.wrong { background: var(--red-bg); color: var(--red); }
+  .btn { font-family: 'Noto Sans SC', sans-serif; background: #1a1a2e; color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.88rem; margin-top: 0.5rem; }
+  .btn:hover { opacity: 0.85; }
+  .exercise { background: var(--accent-light); border: 1px solid var(--accent); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; }
+  .exercise-title { font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .exercise textarea { width: 100%; min-height: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 4px; margin: 0.5rem 0; resize: vertical; background: white; }
+  .exercise .hint { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; color: #555; }
+  .callout { background: #fff8e1; border-left: 3px solid #f9a825; padding: 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; }
+  .callout strong { color: #e65100; }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-bottom: 1px solid var(--border); font-family: 'Noto Sans SC', sans-serif; font-size: 0.85rem; color: #777; padding-bottom: 0.5rem; }
+  .reference-link { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; }
+  .reference-link a { color: var(--blue); }
+  table { width: 100%; border-collapse: collapse; margin: 1rem 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  th, td { border: 1px solid var(--border); padding: 0.6rem 0.8rem; text-align: left; }
+  th { background: var(--code-bg); font-weight: 600; }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>跨模型迁移</h1>
+<p class="subtitle">Lesson 14 &middot; Claude → GPT → Gemini → 国产 &middot; 约 25 分钟</p>
+
+<p>
+你花了很多精力学习 Anthropic 的最佳实践。但现实是：你可能需要在不同模型间切换——成本、延迟、可用性、合规要求。
+本课教你如何<strong>迁移</strong> prompt，而不是为每个模型重写。
+</p>
+
+<p>
+我们的核心发现：<strong>Anthropic 教你的大部分技巧是通用的</strong>。
+你需要调整的是格式、参数和少量行为差异。
+</p>
+
+<div class="sidenote">
+这是最后一课。它的目标是：让你无论用什么模型，都能用上这 14 课学到的思维框架。
+</div>
+
+<h2>核心兼容性矩阵</h2>
+
+<table>
+  <tr><th>技巧</th><th>Claude</th><th>GPT-4o</th><th>Gemini 2.5</th><th>DeepSeek</th><th>通义千问</th></tr>
+  <tr><td>清晰直接</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td></tr>
+  <tr><td>XML 标签</td><td>★★★</td><td>★★☆</td><td>★★☆</td><td>★★☆</td><td>★★☆</td></tr>
+  <tr><td>Markdown 分段</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td></tr>
+  <tr><td>Few-shot 示例</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td></tr>
+  <tr><td>CoT / 分步思考</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td></tr>
+  <tr><td>角色设定</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td></tr>
+  <tr><td>输出格式模板</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★★</td></tr>
+  <tr><td>上下文解释（为什么）</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★☆</td><td>★★☆</td></tr>
+  <tr><td>引用先行</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★☆</td><td>★★☆</td></tr>
+  <tr><td>System Prompt 细化</td><td>★★★</td><td>★★★</td><td>★★★</td><td>★★☆</td><td>★★☆</td></tr>
+  <tr><td>Parallel Tool Call</td><td>★★★</td><td>★★★</td><td>★★☆</td><td>★★</td><td>★★</td></tr>
+  <tr><td>Thinking / Effort</td><td>★★★</td><td>★★☆</td><td>★★☆</td><td>★</td><td>★</td></tr>
+</table>
+
+<h2>迁移策略：格式层</h2>
+
+<p><strong>XML 标签 → Markdown 标题</strong>：Claude 对 XML 特别敏感，但其他模型可能更适应 markdown。</p>
+
+<pre>// Claude 优化版（XML）
+&lt;task&gt;分析这份报告&lt;/task&gt;
+&lt;context&gt;...&lt;/context&gt;
+
+// 通用版（Markdown）
+## 任务
+分析这份报告
+
+## 上下文
+...</pre>
+
+<p><strong>经验</strong>：以 markdown 版本为"通用格式"，如果需要极致效果再用 XML（仅 Claude）。</p>
+
+<h2>迁移策略：参数层</h2>
+
+<table>
+  <tr><th>功能</th><th>Claude</th><th>GPT-4o</th><th>Gemini</th></tr>
+  <tr><td>思考深度</td><td>effort (low/med/high/max)</td><td>reasoning_effort (low/med/high)</td><td>thinking_config</td></tr>
+  <tr><td>温度</td><td>temperature (0–1)</td><td>temperature (0–2)</td><td>temperature (0–2)</td></tr>
+  <tr><td>最大输出</td><td>max_tokens</td><td>max_tokens</td><td>max_output_tokens</td></tr>
+  <tr><td>结构化输出</td><td>structured_outputs</td><td>response_format (json_schema)</td><td>response_mime_type</td></tr>
+  <tr><td>工具调用</td><td>tool_use</td><td>function_call</td><td>function_declaration</td></tr>
+</table>
+
+<h2>迁移策略：行为层</h2>
+
+<p>不同模型有不同的"性格"——这些需要在 prompt 中补偿：</p>
+
+<table>
+  <tr><th>模型</th><th>倾向</th><th>补偿策略</th></tr>
+  <tr><td>Claude</td><td>谨慎、精确、擅长指令遵循</td><td>可以更直接，需要"允许行动"的语言</td></tr>
+  <tr><td>GPT-4o</td><td>创造性、冗长、易偏离</td><td>更严格的输出约束、更频繁的格式指示</td></tr>
+  <tr><td>Gemini</td><td>结构化、偏好列表</td><td>明确要求"散文段落"而不是列表</td></tr>
+  <tr><td>DeepSeek / 国产</td><td>指令遵循中等、对长上下文敏感</td><td>更短的 prompt、更明确的格式、更频繁的自检</td></tr>
+</table>
+
+<h2>迁移检查清单</h2>
+
+<p>迁移 prompt 到新模型时，检查这些：</p>
+
+<ol>
+  <li><strong>格式</strong> — XML 要转成 Markdown 吗？</li>
+  <li><strong>参数</strong> — effort / reasoning_effort 要映射吗？</li>
+  <li><strong>System Prompt</strong> — 新模型是否有 system prompt 支持？</li>
+  <li><strong>输出格式</strong> — structured_output / response_format 是否需要改？</li>
+  <li><strong>行为补偿</strong> — 新模型需要更严的约束还是更宽松？</li>
+  <li><strong>评测</strong> — 用同一套评测集在两个模型上跑，对比结果</li>
+</ol>
+
+<div class="quiz">
+  <div class="quiz-question">✏️ 测验 1：把 Claude prompt 迁移到国产模型时，最应该做什么？</div>
+  <label class="quiz-option"><input type="radio" name="q1" value="a"> 不做任何修改，直接复制</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="b"> 增加更明确的格式约束、更短的 prompt、更频繁的自检</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="c"> 全部用英文写 prompt</label>
+  <div class="quiz-feedback" id="q1-feedback"></div>
+  <button class="btn" onclick="checkQuiz('q1', 'b')">检查答案</button>
+</div>
+
+<div class="exercise">
+  <div class="exercise-title">✍️ 练习：跨模型迁移演练</div>
+  <p>以下是一条为 Claude 优化的 prompt。请改写为一个<strong>通用版本</strong>，能在 GPT-4o 和国产模型上同样有效。</p>
+  <div class="prompt-box prompt-good" style="white-space:pre-wrap; margin-bottom:0.8rem;">&lt;task&gt;
+将以下英文新闻摘要翻译成中文，保持新闻语体的简洁客观。
+&lt;/task&gt;
+
+&lt;news&gt;
+The company reported a 23% increase in quarterly revenue...
+&lt;/news&gt;
+
+&lt;requirements&gt;
+- 不使用"据悉"、"据了解"等套话
+- 保持数字精确
+- 在 &lt;output&gt; 标签中输出
+&lt;/requirements&gt;</pre>
+  <textarea id="exercise1" placeholder="改写为通用版本..."></textarea>
+  <div class="hint">提示：将 XML 标签改为 Markdown 标题即可。</div>
+  <button class="btn" onclick="toggleHint('ex1-hint')">查看参考答案</button>
+  <div id="ex1-hint" style="display:none; margin-top:0.8rem;">
+    <pre>## 任务
+将以下英文新闻摘要翻译成中文，保持新闻语体的简洁客观。
+
+## 新闻
+The company reported a 23% increase in quarterly revenue...
+
+## 要求
+- 不使用"据悉"、"据了解"等套话
+- 保持数字精确
+- 不要开场白，直接输出翻译结果</pre>
+  </div>
+</div>
+
+<h2>最终总结：14 课知识图谱</h2>
+
+<table>
+  <tr><th>层级</th><th>课程</th><th>核心能力</th></tr>
+  <tr><td>基础</td><td>L1 核心框架 · L2 Few-Shot · L3 CoT</td><td>结构清晰、示例驱动、分步推理</td></tr>
+  <tr><td>控制</td><td>L4 输出格式 · L5 长上下文 · L6 System Prompt</td><td>输出可控、文档处理、系统设计</td></tr>
+  <tr><td>进阶</td><td>L7 Chain · L8 防幻觉 · L9 Tool Use</td><td>多步流程、可靠、Agent</td></tr>
+  <tr><td>专业</td><td>L10 Context · L11 Effort · L12 子代理 · L13 评测 · L14 迁移</td><td>工程化、调优、跨模型</td></tr>
+</table>
+
+<div class="callout">
+<strong>🎉 恭喜完成全部课程！</strong><br><br>
+你已掌握了 Anthropic 提示词工程的完整方法论，并知道如何将其应用到任何模型上。<br><br>
+<strong>下一步建议</strong>：
+<ul>
+  <li>将这些技巧应用到日常工作中——从少到多，每次加一个技巧</li>
+  <li>为你最常用的 prompt 建立评测集（L13）</li>
+  <li>加入 <a href="https://reddit.com/r/PromptEngineering">r/PromptEngineering</a> 或 Anthropic Discord 参与社区</li>
+  <li>有任何问题随时回来找我——作为你的教师，我随时可以帮你 review prompt、设计课程、排查问题</li>
+</ul>
+</div>
+
+<footer>Lesson 14 — 最终课 · 上节课：<a href="0013-evaluation-iteration.html">Lesson 13: 评测与迭代</a></footer>
+</div>
+
+<script>
+function checkQuiz(quizId, correctAnswer) {
+  const quizEl = document.getElementById(quizId + '-feedback');
+  const selected = document.querySelector(`input[name="${quizId}"]:checked`);
+  if (!selected) { quizEl.textContent = '请先选择一个选项。'; quizEl.className = 'quiz-feedback show wrong'; return; }
+  document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => el.parentElement.classList.remove('correct', 'wrong'));
+  const label = selected.parentElement;
+  if (selected.value === correctAnswer) {
+    label.classList.add('correct');
+    quizEl.textContent = '✓ 正确！' + getExplanation(quizId); quizEl.className = 'quiz-feedback show correct';
+  } else {
+    label.classList.add('wrong');
+    document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => { if (el.value === correctAnswer) el.parentElement.classList.add('correct'); });
+    quizEl.textContent = '✗ 再想想。' + getExplanation(quizId); quizEl.className = 'quiz-feedback show wrong';
+  }
+}
+function getExplanation(quizId) {
+  return { 'q1': '国产模型对指令遵循和长上下文的处理能力相对弱一些。更短的 prompt、更明确的格式约束和自检能有效弥补这个差距。' }[quizId] || '';
+}
+function toggleHint(id) { const el = document.getElementById(id); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+</script>
+</body>
+</html>
