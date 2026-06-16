@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Lesson 7: Prompt Chaining — 多步提示词链</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@400;500;700&family=JetBrains+Mono:wght@400;500&display=swap');
+  :root { --text: #1a1a2e; --bg: #faf9f7; --accent: #b85c1a; --accent-light: #fae5d3; --border: #ddd8d0; --code-bg: #f4f3ef; --green: #2d6a4f; --green-bg: #e8f5e9; --red: #b71c1c; --red-bg: #fbe9e7; --width: 680px; }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: 'Noto Serif SC', Georgia, serif; color: var(--text); background: var(--bg); line-height: 1.8; font-size: 16px; padding: 2rem 1rem; }
+  .container { max-width: var(--width); margin: 0 auto; }
+  .sidenote { float: right; clear: right; margin-right: -260px; width: 230px; font-size: 0.78rem; line-height: 1.5; color: #555; font-family: 'Noto Sans SC', sans-serif; margin-top: 0.3rem; padding: 0.5rem 0.8rem; background: #f4f3ef; border-radius: 4px; }
+  @media (max-width: 1000px) { .sidenote { float: none; margin-right: 0; width: 100%; } }
+  h1 { font-size: 2rem; font-weight: 700; margin-bottom: 0.25rem; color: var(--accent); }
+  .subtitle { font-family: 'Noto Sans SC', sans-serif; font-size: 0.95rem; color: #777; margin-bottom: 2rem; border-bottom: 1px solid var(--border); padding-bottom: 1rem; }
+  h2 { font-size: 1.4rem; font-weight: 700; margin-top: 2.5rem; margin-bottom: 0.8rem; padding-bottom: 0.3rem; border-bottom: 2px solid var(--accent); }
+  h3 { font-size: 1.1rem; font-weight: 600; margin-top: 1.8rem; margin-bottom: 0.5rem; }
+  p { margin-bottom: 1rem; }
+  ul, ol { margin: 0.5rem 0 1rem 1.5rem; }
+  li { margin-bottom: 0.3rem; }
+  code { font-family: 'JetBrains Mono', monospace; font-size: 0.85em; background: var(--code-bg); padding: 0.15em 0.4em; border-radius: 3px; }
+  pre { background: #1e1e2e; color: #cdd6f4; padding: 1rem 1.2rem; border-radius: 6px; overflow-x: auto; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; margin: 1rem 0; white-space: pre-wrap; }
+  .prompt-box { border-radius: 6px; padding: 1rem; font-family: 'JetBrains Mono', monospace; font-size: 0.82rem; line-height: 1.6; white-space: pre-wrap; }
+  .prompt-good { background: var(--green-bg); border-left: 3px solid var(--green); }
+  .quiz { background: white; border: 1px solid var(--border); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; box-shadow: 0 1px 4px rgba(0,0,0,0.04); }
+  .quiz-question { font-weight: 600; margin-bottom: 0.8rem; }
+  .quiz-option { display: block; margin: 0.4rem 0; padding: 0.5rem 0.8rem; border: 1px solid var(--border); border-radius: 4px; cursor: pointer; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .quiz-option:hover { background: #f8f7f5; }
+  .quiz-option input { margin-right: 0.5rem; }
+  .quiz-option.correct { background: var(--green-bg); border-color: var(--green); }
+  .quiz-option.wrong { background: var(--red-bg); border-color: var(--red); }
+  .quiz-feedback { margin-top: 0.8rem; padding: 0.8rem; border-radius: 4px; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; display: none; }
+  .quiz-feedback.show { display: block; }
+  .quiz-feedback.correct { background: var(--green-bg); color: var(--green); }
+  .quiz-feedback.wrong { background: var(--red-bg); color: var(--red); }
+  .btn { font-family: 'Noto Sans SC', sans-serif; background: #1a1a2e; color: white; border: none; padding: 0.5rem 1.2rem; border-radius: 4px; cursor: pointer; font-size: 0.88rem; margin-top: 0.5rem; }
+  .btn:hover { opacity: 0.85; }
+  .exercise { background: var(--accent-light); border: 1px solid var(--accent); border-radius: 8px; padding: 1.5rem; margin: 1.5rem 0; }
+  .exercise-title { font-weight: 700; color: var(--accent); margin-bottom: 0.5rem; font-family: 'Noto Sans SC', sans-serif; font-size: 0.9rem; }
+  .exercise textarea { width: 100%; min-height: 100px; font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; padding: 0.8rem; border: 1px solid var(--border); border-radius: 4px; margin: 0.5rem 0; resize: vertical; background: white; }
+  .exercise .hint { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; color: #555; }
+  .callout { background: #fff8e1; border-left: 3px solid #f9a825; padding: 1rem; margin: 1rem 0; border-radius: 0 4px 4px 0; font-family: 'Noto Sans SC', sans-serif; font-size: 0.88rem; }
+  .callout strong { color: #e65100; }
+  footer { margin-top: 4rem; padding-top: 1.5rem; border-top: 1px solid var(--border); font-family: 'Noto Sans SC', sans-serif; font-size: 0.85rem; color: #777; }
+  .reference-link { font-family: 'Noto Sans SC', sans-serif; font-size: 0.82rem; }
+  .reference-link a { color: var(--blue); }
+
+  .flow { display: flex; align-items: center; justify-content: center; gap: 0.5rem; margin: 1.5rem 0; font-family: 'Noto Sans SC', sans-serif; flex-wrap: wrap; }
+  .flow-step { background: var(--accent); color: white; padding: 0.6rem 1rem; border-radius: 6px; font-size: 0.85rem; font-weight: 500; text-align: center; }
+  .flow-arrow { color: var(--text); font-size: 1.2rem; font-weight: 700; }
+  @media (max-width: 500px) { .flow { flex-direction: column; } .flow-arrow { transform: rotate(90deg); } }
+</style>
+</head>
+<body>
+<div class="container">
+
+<h1>Prompt Chaining — 多步提示词链</h1>
+<p class="subtitle">Lesson 7 &middot; 分解复杂任务 &middot; 约 25 分钟</p>
+
+<p>
+前几课所有的技巧都关注<strong>单次</strong> prompt。但很多真实任务太复杂，一次对话搞不定——
+比如"分析财报 → 提炼关键指标 → 写摘要 → 翻译成英文"。这时候需要 <strong>Prompt Chaining</strong>。
+</p>
+
+<p class="reference-link">
+► 官方参考：<a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#chain-complex-prompts" target="_blank">Anthropic — Chain complex prompts</a>
+</p>
+
+<div class="sidenote">
+Anthropic 指出：新模型（Opus 4.6+）的 adaptive thinking 可以在单次内部做复杂推理。链式调用在需要<em>检查中间结果</em>或<em>强制特定流水线</em>时仍然是最好的选择。
+</div>
+
+<h2>为什么要链式调用？</h2>
+
+<p>单一 prompt 的局限：</p>
+<ul>
+  <li><strong>注意力稀释</strong> — 任务越长、步骤越多，AI 越容易遗漏或混淆</li>
+  <li><strong>无法检查中间结果</strong> — 如果中间步骤错了，最终输出不可能对</li>
+  <li><strong>调试困难</strong> — 你不知道是哪一步出了问题</li>
+  <li><strong>token 浪费</strong> — 如果第一步就出错，后面的推理白做了</li>
+</ul>
+
+<p>链式调用把一个长任务拆成多个短任务，每一步聚焦一个目标：</p>
+
+<div class="flow">
+  <span class="flow-step">提取数据</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">分析趋势</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">撰写报告</span>
+  <span class="flow-arrow">→</span>
+  <span class="flow-step">翻译输出</span>
+</div>
+
+<h2>模式一：自纠正链（Generate → Review → Refine）</h2>
+
+<p>这是最实用、最通用的链式模式，分为三步：</p>
+
+<h3>Step 1: 生成（Generate）</h3>
+<pre>&lt;task&gt;根据以下需求，写一封面向客户的版本更新邮件。&lt;/task&gt;
+&lt;context&gt;（产品更新说明）&lt;/context&gt;</pre>
+
+<h3>Step 2: 审查（Review）</h3>
+<pre>&lt;task&gt;审查以下邮件是否符合标准：
+1. 语气是否适合非技术客户？
+2. 是否突出了客户能感知到的价值？
+3. 是否有不明确的缩写？
+4. 是否有不必要的技术细节？
+
+列出每个问题的具体问题。&lt;/task&gt;
+&lt;draft&gt;（上一步的输出）&lt;/draft&gt;</pre>
+
+<h3>Step 3: 优化（Refine）</h3>
+<pre>&lt;task&gt;根据审查反馈优化这封邮件。只修改有问题的地方，保留好的部分。&lt;/task&gt;
+&lt;feedback&gt;（上一步的输出）&lt;/feedback&gt;
+&lt;draft&gt;（第一步的输出）&lt;/draft&gt;</pre>
+
+<div class="callout">
+<strong>适用场景</strong>：邮件/文案写作、代码审查、翻译润色、内容审核——任何需要"先产出再优化"的任务。
+</div>
+
+<h2>模式二：分解链（Decompose → Execute → Assemble）</h2>
+
+<p>适用于大型分析任务：</p>
+
+<pre>// Step 1: 分解
+分析这个需求，列出所有需要实现的独立功能模块。
+按依赖关系排序。
+
+// Step 2: 执行（对每个模块分别执行）
+实现模块 X。输入是 [上一步的输出]，输出是代码和测试。
+
+// Step 3: 组装
+将所有模块整合。检查接口是否匹配，测试是否覆盖完整链路。</pre>
+
+<h2>什么时候链式、什么时候单次？</h2>
+
+<table>
+  <tr><th>适合链式</th><th>适合单次</th></tr>
+  <tr><td>任务有清晰的阶段划分</td><td>任务简单直接</td></tr>
+  <tr><td>需要检查中间结果</td><td>一次推理就能完成</td></tr>
+  <tr><td>不同阶段需要不同角色/指令</td><td>不需要切换上下文</td></tr>
+  <tr><td>单次 prompt 超过 4k token</td><td>prompt 简洁明了</td></tr>
+  <tr><td>你在调试/迭代某个复杂工作流</td><td>已稳定的流水线</td></tr>
+</table>
+
+<div class="sidenote">
+经验法则：如果你发现自己在一个 prompt 里写了很多"第一步...第二步...第三步..."，这就是一个信号——该拆成链式了。
+</div>
+
+<div class="quiz">
+  <div class="quiz-question">✏️ 测验 1：以下哪个场景最适合用链式调用？</div>
+  <label class="quiz-option"><input type="radio" name="q1" value="a"> "把这段中文翻译成英文"</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="b"> "分析用户反馈 → 提取前 5 个问题 → 为每个问题写改进建议 → 翻译成英文周报"</label>
+  <label class="quiz-option"><input type="radio" name="q1" value="c"> "这个函数的时间复杂度是多少？"</label>
+  <div class="quiz-feedback" id="q1-feedback"></div>
+  <button class="btn" onclick="checkQuiz('q1', 'b')">检查答案</button>
+</div>
+
+<h2>链式调用的工程实践</h2>
+
+<ol>
+  <li><strong>每步传递上下文</strong> — 每一步的 output 作为下一步的 input，保持信息流不断</li>
+  <li><strong>每步一个明确目标</strong> — 不要在一个步骤里塞两个不相关的子任务</li>
+  <li><strong>设计可检查的中间产出</strong> — 每步的输出应该能被人工（或脚本）验证</li>
+  <li><strong>考虑失败恢复</strong> — 如果某一步失败了，是从头开始还是从这一步重试？</li>
+  <li><strong>同一个 system prompt 贯穿</strong> — 角色定义应该在所有步骤中保持一致</li>
+</ol>
+
+<div class="exercise">
+  <div class="exercise-title">✍️ 练习：设计代码审查链</div>
+  <p>你需要审查一个 PR（包含 3 个文件的改动）。请设计一个 3 步链：代码审查 → 问题分类 → 汇总报告。写出每一步的 prompt 框架。</p>
+  <textarea id="exercise1" placeholder="设计三步链：审查 → 分类 → 汇总..."></textarea>
+  <div class="hint">提示：Step 1 关注具体问题，Step 2 分类（bug/性能/风格），Step 3 输出汇总报告。</div>
+  <button class="btn" onclick="toggleHint('ex1-hint')">查看参考答案</button>
+  <div id="ex1-hint" style="display:none; margin-top:0.8rem;">
+    <pre>Step 1 — 审查（每个文件执行一次）：
+&lt;task&gt;审查以下代码文件，列出所有问题。每条问题包含：文件路径、行号、问题描述。&lt;/task&gt;
+&lt;file&gt;（文件内容）&lt;/file&gt;
+
+Step 2 — 分类：
+&lt;task&gt;将以下问题分为三类：BUG（可能影响运行）、PERF（性能问题）、STYLE（代码风格）。标注严重程度。&lt;/task&gt;
+&lt;issues&gt;（Step 1 的输出）&lt;/issues&gt;
+
+Step 3 — 汇总：
+&lt;task&gt;写一份 PR 审查摘要。格式：修改概述 → 问题统计 → 必须修复项 → 建议项。&lt;/task&gt;
+&lt;classified&gt;（Step 2 的输出）&lt;/classified&gt;</pre>
+  </div>
+</div>
+
+<h2>跨模型适用性</h2>
+
+<p>Prompt Chain 是<strong>完全通用</strong>的技术——它不依赖模型的任何特殊能力。所有模型都支持多轮对话，链式调用本质上就是精心设计的多轮对话。</p>
+
+<h2>总结</h2>
+<ol>
+  <li><strong>链式 = 复杂任务拆成多步</strong>，每步聚焦一个目标</li>
+  <li><strong>自纠正链</strong>：生成 → 审查 → 优化，是最实用的链式模式</li>
+  <li><strong>分解链</strong>：拆解 → 执行 → 组装，适用于大型分析任务</li>
+  <li><strong>判断标准</strong>：需要中间检查、不同阶段需要不同指令 → 用链式</li>
+  <li><strong>工程要点</strong>：传递上下文、单一目标、可检查产出</li>
+</ol>
+
+<p class="callout"><strong>课后行动</strong>：从你日常工作中找一个多步骤任务（比如"翻译+审校+汇总"），拆成链式调用，对比单次 prompt 的效果差异。</p>
+
+<p><strong>推荐延伸阅读</strong>：<a href="https://platform.claude.com/docs/en/build-with-claude/prompt-engineering/claude-prompting-best-practices#chain-complex-prompts" target="_blank">Anthropic — Chain complex prompts</a></p>
+<p><strong>课后问题</strong>：对本课内容有任何疑问，随时可以问我。</p>
+
+<footer>Lesson 7 of Anthropic 提示词工程 &middot; 上节课：<a href="0006-system-prompt.html">Lesson 6: System Prompt 设计</a></footer>
+</div>
+
+<script>
+function checkQuiz(quizId, correctAnswer) {
+  const quizEl = document.getElementById(quizId + '-feedback');
+  const selected = document.querySelector(`input[name="${quizId}"]:checked`);
+  if (!selected) { quizEl.textContent = '请先选择一个选项。'; quizEl.className = 'quiz-feedback show wrong'; return; }
+  document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => el.parentElement.classList.remove('correct', 'wrong'));
+  const label = selected.parentElement;
+  if (selected.value === correctAnswer) {
+    label.classList.add('correct');
+    quizEl.textContent = '✓ 正确！' + getExplanation(quizId); quizEl.className = 'quiz-feedback show correct';
+  } else {
+    label.classList.add('wrong');
+    document.querySelectorAll(`input[name="${quizId}"]`).forEach(el => { if (el.value === correctAnswer) el.parentElement.classList.add('correct'); });
+    quizEl.textContent = '✗ 再想想。' + getExplanation(quizId); quizEl.className = 'quiz-feedback show wrong';
+  }
+}
+function getExplanation(quizId) {
+  return { 'q1': '选项 B 包含 4 个清晰的阶段（分析→提取→建议→翻译），每个阶段目标不同，中间结果需要检查，非常适合链式调用。' }[quizId] || '';
+}
+function toggleHint(id) { const el = document.getElementById(id); el.style.display = el.style.display === 'none' ? 'block' : 'none'; }
+</script>
+</body>
+</html>
